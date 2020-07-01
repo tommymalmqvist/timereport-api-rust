@@ -1,6 +1,11 @@
+extern crate rusoto_core;
+extern crate rusoto_dynamodb;
+
 use rusoto_core::Region;
-use rusoto_dynamodb::{DynamoDbClient, ListTablesInput};
- 
+use rusoto_dynamodb::{
+    DynamoDb, DynamoDbClient, ListTablesInput
+}; 
+
 #[tokio::main]
 async fn main() {
 

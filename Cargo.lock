@@ -1302,6 +1302,7 @@ dependencies = [
 name = "timereport-api-rust"
 version = "0.1.0"
 dependencies = [
+ "futures",
  "rusoto_core",
  "rusoto_dynamodb",
  "tokio",
