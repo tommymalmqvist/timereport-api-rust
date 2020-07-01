@@ -2,22 +2,23 @@ extern crate rusoto_core;
 extern crate rusoto_dynamodb;
 
 use rusoto_core::Region;
-use rusoto_dynamodb::{
-    DynamoDb, DynamoDbClient, ListTablesInput
-}; 
+use rusoto_dynamodb::{DynamoDb, DynamoDbClient, ListTablesInput};
 
 #[tokio::main]
 async fn main() {
-
     let client = get_dynamodb_local_client();
 
     let list_tables_input: ListTablesInput = Default::default();
-    
+
     match client.list_tables(list_tables_input).await {
         Ok(output) => match output.table_names {
             Some(table_name_list) => {
-                println!("Tables in database:");
- 
+                if table_name_list.is_empty() {
+                    println!("No tables found");
+                } else {
+                    println!("Tables in database:");
+                }
+
                 for table_name in table_name_list {
                     println!("{}", table_name);
                 }
