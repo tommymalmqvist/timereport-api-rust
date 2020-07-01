@@ -17,10 +17,9 @@ async fn main() {
                     println!("No tables found");
                 } else {
                     println!("Tables in database:");
-                }
-
-                for table_name in table_name_list {
-                    println!("{}", table_name);
+                    for table_name in table_name_list {
+                        println!("{}", table_name);
+                    }
                 }
             }
             None => println!("No tables in database!"),
