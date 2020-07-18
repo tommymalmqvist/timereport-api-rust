@@ -16,7 +16,8 @@ async fn main() {
 
     let list_tables_input: ListTablesInput = Default::default();
 
-    let event_table = create_event_table_input();
+    let event_table = create_table_input("dev_event".to_string());
+    let lock_table = create_table_input("dev_lock".to_string());
 
     match client.list_tables(list_tables_input).await {
         Ok(output) => match output.table_names {
@@ -24,6 +25,10 @@ async fn main() {
                 if table_name_list.is_empty() {
                     println!("No tables found");
                     match client.create_table(event_table).await {
+                        Ok(val) => val,
+                        Err(e) => panic!("Could not create table, {}", e),
+                    };
+                    match client.create_table(lock_table).await {
                         Ok(val) => val,
                         Err(e) => panic!("Could not create table, {}", e),
                     };
@@ -50,7 +55,7 @@ fn get_dynamodb_local_client() -> DynamoDbClient {
     DynamoDbClient::new(region)
 }
 
-fn create_event_table_input() -> CreateTableInput {
+fn create_table_input(table_name: String) -> CreateTableInput {
     let provisioned_throughput = ProvisionedThroughput {
         read_capacity_units: 1,
         write_capacity_units: 1,
@@ -75,8 +80,8 @@ fn create_event_table_input() -> CreateTableInput {
         key_type: "RANGE".to_string(), // case sensitive
     };
 
-    let event_table_input = CreateTableInput {
-        table_name: "dev_event".to_string(),
+    let table_input = CreateTableInput {
+        table_name: table_name,
         attribute_definitions: vec![attr_user_id, attr_event_date],
         key_schema: vec![key_user_id, key_event_date],
         billing_mode: Some("PROVISIONED".to_string()),
@@ -84,7 +89,5 @@ fn create_event_table_input() -> CreateTableInput {
         ..Default::default()
     };
 
-    event_table_input
+   table_input
 }
-
-// fn create_event_table(input: CreateTableInput) ->
