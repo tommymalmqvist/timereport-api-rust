@@ -1,0 +1,15 @@
+version: '3.7'
+services:
+ dynamodb-local:
+  image: amazon/dynamodb-local:latest
+  container_name: dynamodb-local
+  hostname: dynamo.local
+  ports:
+  - "8000:8000"
+  expose:
+    - 8000
+  logging:
+    driver: "json-file"
+    options:
+      max-file: "5"
+      max-size: "10m"

@@ -1,93 +1,84 @@
-extern crate futures;
 extern crate rusoto_core;
 extern crate rusoto_dynamodb;
 
-use futures::future::Future;
 use rusoto_core::Region;
 use rusoto_dynamodb::{
-    AttributeDefinition, AttributeValue, CreateTableInput, CreateTableOutput, DynamoDb,
-    DynamoDbClient, GetItemError, GetItemInput, GetItemOutput, KeySchemaElement, ListTablesInput,
-    ProvisionedThroughput, UpdateItemInput, UpdateItemOutput,
+    AttributeDefinition, CreateTableInput, CreateTableOutput, DynamoDb, DynamoDbClient,
+    KeySchemaElement, ListTablesInput,
 };
 
-#[tokio::main]
-async fn main() {
-    let client = get_dynamodb_local_client();
+async fn create_table(
+    client: &DynamoDbClient,
+    table: CreateTableInput,
+) -> Result<CreateTableOutput, String> {
+    let create = client.create_table(table);
+}
 
-    let list_tables_input: ListTablesInput = Default::default();
-
-    let event_table = create_table_input("dev_event".to_string());
-    let lock_table = create_table_input("dev_lock".to_string());
-
-    match client.list_tables(list_tables_input).await {
-        Ok(output) => match output.table_names {
-            Some(table_name_list) => {
-                if table_name_list.is_empty() {
-                    println!("No tables found");
-                    match client.create_table(event_table).await {
-                        Ok(val) => val,
-                        Err(e) => panic!("Could not create table, {}", e),
-                    };
-                    match client.create_table(lock_table).await {
-                        Ok(val) => val,
-                        Err(e) => panic!("Could not create table, {}", e),
-                    };
-                } else {
-                    println!("Tables in database:");
-                    for table_name in table_name_list {
-                        println!("{}", table_name);
-                    }
-                }
-            }
-            None => println!("No tables in database!"),
+fn create_table_input(s: &str) -> CreateTableInput {
+    let attributes: Vec<AttributeDefinition> = vec![
+        AttributeDefinition {
+            attribute_name: "user_id".to_string(),
+            attribute_type: "S".to_string(),
         },
-        Err(error) => {
-            println!("Error: {:?}", error);
-        }
-    }
-}
+        AttributeDefinition {
+            attribute_name: "event_date".to_string(),
+            attribute_type: "S".to_string(),
+        },
+        AttributeDefinition {
+            attribute_name: "reason".to_string(),
+            attribute_type: "S".to_string(),
+        },
+        AttributeDefinition {
+            attribute_name: "hours".to_string(),
+            attribute_type: "S".to_string(),
+        },
+    ];
 
-fn get_dynamodb_local_client() -> DynamoDbClient {
-    let region = Region::Custom {
-        name: "us-east-1".to_owned(),
-        endpoint: "http://localhost:8000".to_owned(),
-    };
-    DynamoDbClient::new(region)
-}
+    let key_schema: Vec<KeySchemaElement> = vec![
+        KeySchemaElement {
+            attribute_name: "user_id".to_string(),
+            key_type: "HASH".to_string(),
+        },
+        KeySchemaElement {
+            attribute_name: "event_date".to_string(),
+            key_type: "RANGE".to_string(),
+        },
+    ];
 
-fn create_table_input(table_name: String) -> CreateTableInput {
-    let provisioned_throughput = ProvisionedThroughput {
-        read_capacity_units: 1,
-        write_capacity_units: 1,
-    };
-
-    let attr_user_id = AttributeDefinition {
-        attribute_name: "user_id".to_string(),
-        attribute_type: "S".to_string(),
-    };
-
-    let attr_event_date = AttributeDefinition {
-        attribute_name: "event_date".to_string(),
-        attribute_type: "S".to_string(),
-    };
-
-    let key_user_id = KeySchemaElement {
-        attribute_name: "user_id".to_string(),
-        key_type: "HASH".to_string(),
-    };
-    let key_event_date = KeySchemaElement {
-        attribute_name: "event_date".to_string(),
-        key_type: "RANGE".to_string(), // case sensitive
-    };
-
-    let table_input = CreateTableInput {
-        table_name: table_name,
-        attribute_definitions: vec![attr_user_id, attr_event_date],
-        key_schema: vec![key_user_id, key_event_date],
-        billing_mode: Some("PROVISIONED".to_string()),
-        provisioned_throughput: Some(provisioned_throughput),
+    let table_request = CreateTableInput {
+        table_name: String::from(s),
+        attribute_definitions: attributes,
+        key_schema: key_schema,
         ..Default::default()
     };
 
-   table_input
+    table_request
+}
+
+#[tokio::main]
+async fn main() {
+    let client = DynamoDbClient::new(Region::Custom {
+        name: "eu-east-1".to_owned(),
+        endpoint: "http://localhost:8000".to_owned(),
+    });
+    let list_tables_input: ListTablesInput = Default::default();
+
+    match client.list_tables(list_tables_input).await {
+        Ok(o) => match o.table_names {
+            Some(table_names) => {
+                if table_names.len() > 0 {
+                    println!("Tables in database:");
+                    for table_name in table_names {
+                        println!("{}", table_name);
+                    }
+                } else {
+                    println!("No tables in database!")
+                }
+            }
+            None => println!("Could not retrieve tables!"),
+        },
+        Err(e) => {
+            println!("Error: {:?}", e);
+        }
+    }
 }
