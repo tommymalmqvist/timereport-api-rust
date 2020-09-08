@@ -12,18 +12,23 @@ use rusoto_dynamodb::{
 
 #[tokio::main]
 async fn main() {
+    // create client
     let client = get_dynamodb_local_client();
 
+    // get all existing tables
     let list_tables_input: ListTablesInput = Default::default();
 
+    // prepare input if tables doesn't exist
     let event_table = create_table_input("dev_event".to_string());
     let lock_table = create_table_input("dev_lock".to_string());
 
+    // get all tables
     match client.list_tables(list_tables_input).await {
         Ok(output) => match output.table_names {
             Some(table_name_list) => {
                 if table_name_list.is_empty() {
-                    println!("No tables found");
+                    // create missing tables
+                    println!("No tables found, creating");
                     match client.create_table(event_table).await {
                         Ok(val) => val,
                         Err(e) => panic!("Could not create table, {}", e),
@@ -39,7 +44,7 @@ async fn main() {
                     }
                 }
             }
-            None => println!("No tables in database!"),
+            None => println!("No result"),
         },
         Err(error) => {
             println!("Error: {:?}", error);
@@ -89,5 +94,5 @@ fn create_table_input(table_name: String) -> CreateTableInput {
         ..Default::default()
     };
 
-   table_input
+    table_input
 }
