@@ -10,10 +10,7 @@ use rusoto_dynamodb::{
 };
 
 #[tokio::main]
-async fn bootstrap() {
-    // create client
-    let client = get_dynamodb_local_client();
-
+pub async fn bootstrap(client: &DynamoDbClient) {
     // get all existing tables
     let list_tables_input: ListTablesInput = Default::default();
 
@@ -51,7 +48,7 @@ async fn bootstrap() {
     }
 }
 
-fn get_dynamodb_local_client() -> DynamoDbClient {
+pub fn get_dynamodb_local_client() -> DynamoDbClient {
     let region = Region::Custom {
         name: "us-east-1".to_owned(),
         endpoint: "http://localhost:8000".to_owned(),
@@ -59,43 +56,39 @@ fn get_dynamodb_local_client() -> DynamoDbClient {
     DynamoDbClient::new(region)
 }
 
-fn create_table_input(s: String) -> CreateTableInput {
-    let attributes: Vec<AttributeDefinition> = vec![
-        AttributeDefinition {
-            attribute_name: "user_id".to_string(),
-            attribute_type: "S".to_string(),
-        },
-        AttributeDefinition {
-            attribute_name: "event_date".to_string(),
-            attribute_type: "S".to_string(),
-        },
-        AttributeDefinition {
-            attribute_name: "reason".to_string(),
-            attribute_type: "S".to_string(),
-        },
-        AttributeDefinition {
-            attribute_name: "hours".to_string(),
-            attribute_type: "S".to_string(),
-        },
-    ];
+fn create_table_input(table_name: String) -> CreateTableInput {
+    let provisioned_throughput = ProvisionedThroughput {
+        read_capacity_units: 1,
+        write_capacity_units: 1,
+    };
 
-    let key_schema: Vec<KeySchemaElement> = vec![
-        KeySchemaElement {
-            attribute_name: "user_id".to_string(),
-            key_type: "HASH".to_string(),
-        },
-        KeySchemaElement {
-            attribute_name: "event_date".to_string(),
-            key_type: "RANGE".to_string(),
-        },
-    ];
+    let attr_user_id = AttributeDefinition {
+        attribute_name: "user_id".to_string(),
+        attribute_type: "S".to_string(),
+    };
 
-    let table_request = CreateTableInput {
-        table_name: String::from(s),
-        attribute_definitions: attributes,
-        key_schema: key_schema,
+    let attr_event_date = AttributeDefinition {
+        attribute_name: "event_date".to_string(),
+        attribute_type: "S".to_string(),
+    };
+
+    let key_user_id = KeySchemaElement {
+        attribute_name: "user_id".to_string(),
+        key_type: "HASH".to_string(),
+    };
+    let key_event_date = KeySchemaElement {
+        attribute_name: "event_date".to_string(),
+        key_type: "RANGE".to_string(), // case sensitive
+    };
+
+    let table_input = CreateTableInput {
+        table_name: table_name,
+        attribute_definitions: vec![attr_user_id, attr_event_date],
+        key_schema: vec![key_user_id, key_event_date],
+        billing_mode: Some("PROVISIONED".to_string()),
+        provisioned_throughput: Some(provisioned_throughput),
         ..Default::default()
     };
 
-    table_request
+    table_input
 }
