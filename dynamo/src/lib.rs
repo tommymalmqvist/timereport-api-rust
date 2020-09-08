@@ -10,7 +10,7 @@ use rusoto_dynamodb::{
 };
 
 #[tokio::main]
-async fn main() {
+async fn bootstrap() {
     // create client
     let client = get_dynamodb_local_client();
 

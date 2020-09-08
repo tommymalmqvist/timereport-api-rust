@@ -68,6 +68,7 @@ dependencies = [
 name = "api"
 version = "0.1.0"
 dependencies = [
+ "dynamo",
  "rocket",
 ]
 
